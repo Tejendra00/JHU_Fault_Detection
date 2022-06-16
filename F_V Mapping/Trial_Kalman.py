@@ -1,7 +1,10 @@
 import numpy as np
+from numpy.linalg import inv
+from numpy import tile,dot
 import matplotlib.pyplot as plt
 import time
 from math import pi
+from numpy import *
 
 class cleanTactileData():
     def __init__(self):
@@ -76,17 +79,46 @@ class KalmanFilter(object):
     def predict(self, u = 0):
         self.x = np.dot(self.F, self.x) + np.dot(self.B, u)
         self.P = np.dot(np.dot(self.F, self.P), self.F.T) + self.Q
-        return self.x
+        return self.x,self.P
 
-    def update(self, z):
-        y = z - np.dot(self.H, self.x)
-        S = self.R + np.dot(self.H, np.dot(self.P, self.H.T))
-        K = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(S))
-        self.x = self.x + np.dot(K, y)
-        I = np.eye(self.n)
-        self.P = np.dot(np.dot(I - np.dot(K, self.H), self.P), 
-        	(I - np.dot(K, self.H)).T) + np.dot(np.dot(K, self.R), K.T)
-        # return self.x
+    def gauss_pdf(self,x,M,S):
+        if M.shape()[1] == 1:
+            DX = x - tile(M, x.shape()[1])
+            E = 0.5 * sum(DX * (dot(inv(S), DX)), axis=0)
+            E = E + 0.5 * M.shape()[0] * np.log(2 * np.pi) + 0.5 * np.log(np.linalg.det(S))
+            P= np.exp(-E)
+        elif x.shape()[1] == 1:
+            DX = tile(x, M.shape()[1])- M
+            E = 0.5 * sum(DX * (dot(inv(S), DX)), axis=0)
+            E = E + 0.5 * M.shape()[0] * np.log(2 * np.pi) + 0.5 * np.log(np.linalg.det(S))
+            P = np.exp(-E)
+        else:
+            DX = x-M
+            E = 0.5 * dot(DX.T, dot(inv(S), DX))
+            E = E + 0.5 * M.shape()[0] * np.log(2 * np.pi) + 0.5 * np.log(np.linalg.det(S))
+            P = np.exp(-E)
+        return (P[0],E[0])
+
+    def update(self,):
+        self.IM=np.dot(self.H,self.x)
+        self.IS = self.R + np.dot(self.H, np.dot(self.P, self.H.T))
+        self.K = np.dot(self.P, np.dot(self.H.T, inv(self.IS)))
+        self.x = self.x + np.dot(self.K, (self.y-self.IM))
+        self.P = self.P - np.dot(self.K, np.dot(self.IS, self.K.T))
+        self.LH = self.gauss_pdf(self.y, self.IM, self.IS)
+        return (self.x,self.P,self.K,self.IM,self.IS,self.LH)
+    
+    
+
+    # def update(self, z):
+    #     y = z - np.dot(self.H, self.x)
+    #     S = self.R + np.dot(self.H, np.dot(self.P, self.H.T))
+    #     K = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(S))
+    #     self.x = self.x + np.dot(K, y)
+    #     I = np.eye(self.n)
+    #     self.P = np.dot(np.dot(I - np.dot(K, self.H), self.P), 
+    #     	(I - np.dot(K, self.H)).T) + np.dot(np.dot(K, self.R), K.T)
+    #     # return self.x
 
 def example(data):
     dt=1/20
