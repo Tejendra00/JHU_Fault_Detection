@@ -9,8 +9,8 @@ def test(x,a,b,c,d,e,f):
 
 class cleanTactileData():
     def __init__(self):
-        self.filename="8.txt"
-        self.timme="8.csv"
+        self.filename="12.txt"
+        self.timme="12.csv"
         self.numSensors = 16
         self.data_dict = { '1':[],  '2':[],  '3':[], '4':[], 
                     '5':[],  '6':[],  '7':[],  '8':[], 
@@ -58,8 +58,10 @@ class cleanTactileData():
         b = [1.0 / n] * n
         a = 1
         
+        param_mat=np.zeros((4,4,6))
+        
         for i in range(16):
-            yy=lfilter(b,a,self.data_dict[str(i+1)])
+            # yy=lfilter(b,a,self.data_dict[str(i+1)])
             # f1=open('filea{}.txt'.format(i+1),'w')
             # f2=open('fileb{}.txt'.format(i+1),'w')
             # f1.writelines(str(self.data_dict[str(i+1)]))
@@ -68,13 +70,19 @@ class cleanTactileData():
             # f2.close()
             param,param_cov=curve_fit(test,range(len(self.data_dict[str(i+1)])),self.data_dict[str(i+1)])
             fit_dict=test(range(len(self.data_dict[str(i+1)])),param[0],param[1], param[2],param[3], param[4], param[5])
-            axis[i//4, i%4].plot(self.data_dict[str(i+1)][300:])
-            axis[i//4, i%4].plot(yy[300:],c='r')
-            axis[i//4, i%4].plot(fit_dict[300:],c='y')
+            for j in range(6):
+                param_mat[i//4][i%4][j]=param[j]
+            axis[i//4, i%4].plot(self.data_dict[str(i+1)])
+            # axis[i//4, i%4].plot(yy[300:],c='r')
+            axis[i//4, i%4].plot(fit_dict,c='y')
             # axis.plt(1.9,2.45)
             #axis[i//4, i%4].plot(self.)
             axis[i//4, i%4].set_title('Sensor: '+str(i+1))
             axis[i//4, i%4].grid()
+        f1=open('param{}.txt'.format(12),'w')
+        f1.writelines(str(param_mat))
+        f1.close()    
+        # print(param_mat)
         figure.tight_layout(pad=0.1)
         plt.show()
 
